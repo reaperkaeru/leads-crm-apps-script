@@ -77,6 +77,14 @@
     .build{ font-size:11px; color:var(--muted); }
     .footer a{ font-size:11px; color:var(--ink); text-decoration:underline; }
     .toggle{ display:inline-flex; align-items:center; gap:6px; font-size:11px; padding:6px 8px; border-radius:999px; border:1px solid var(--card-border); background:var(--card-bg); cursor:pointer; user-select:none; }
+    textarea{
+      width:100%; margin-top:6px; padding:10px 12px;
+      border:1px solid var(--input-border); border-radius:12px;
+      outline:none; background:var(--input-bg); color:var(--ink);
+      min-height:140px; resize:vertical;
+      transition:border .2s, box-shadow .2s, background .2s;
+    }
+    textarea:focus{ border-color: var(--c1); box-shadow: var(--focus-ring); }
   </style>
 </head>
 <body>
@@ -99,6 +107,34 @@
   </div>
 
   <div id="debugBanner" class="status"></div>
+
+  <div class="card" id="importCard">
+    <h3>📥 Import Leads (paste)</h3>
+
+    <label>Default Business Type
+      <select id="imp-type">
+        <option>Other</option>
+        <option>Office</option><option>Retail</option><option>Construction</option>
+        <option>Restaurant</option><option>Warehouse</option><option>Medical</option>
+        <option>Residential</option>
+      </select>
+    </label>
+
+    <label>Paste one lead per line
+      <textarea id="imp-text" placeholder="Examples:
+Acme Co (602) 555-1234 Office
+Widget Pros, 480-222-9876, Retail
+The Mop Shop | (623)555-9090"></textarea>
+    </label>
+
+    <div class="actions">
+      <button class="btn" onclick="impPreview()">🔍 Preview</button>
+      <button class="btn secondary" id="imp-commit" onclick="impCommit()" disabled>⬆️ Import</button>
+    </div>
+
+    <div id="imp-status" class="status"></div>
+    <div id="imp-preview"></div>
+  </div>
 
   <!-- ADD LEAD -->
   <div class="card">
@@ -167,7 +203,7 @@
       <a href="#" onclick="openContact();return false;">✉️ Contact us</a>
     </div>
     <div class="credits">created by ChunkyMonkey</div>
-    <div class="build">v1.0.15</div>
+    <div class="build">v1.0.16</div>
     <div class="toggle" id="themeToggle" title="Toggle light/dark">🌙 Dark</div>
   </div>
 
@@ -254,9 +290,78 @@
       }).healthCheck();
     }
 
-    document.addEventListener('DOMContentLoaded', ()=>{
-      ping();
-    });
+  document.addEventListener('DOMContentLoaded', ()=>{
+    ping();
+  });
+  </script>
+
+  <script>
+    function impPreview(){
+      var text = document.getElementById('imp-text').value || '';
+      var type = document.getElementById('imp-type').value || 'Other';
+      var status = document.getElementById('imp-status');
+      setStatus(status, 'Parsing…');
+
+      document.getElementById('imp-preview').innerHTML = '';
+      document.getElementById('imp-commit').disabled = true;
+
+      google.script.run
+        .withSuccessHandler(function(res){
+          if (!res || !res.ok) { setStatus(status, 'Parse error', false); return; }
+          var rows = res.rows || [];
+          setStatus(status, 'Preview: ' + rows.length + ' row(s). Rows with ⚠️ will be skipped.', true);
+          renderImpPreview(rows);
+          document.getElementById('imp-commit').disabled = rows.length === 0;
+        })
+        .withFailureHandler(function(err){
+          setStatus(status, 'Parse error: ' + (err && err.message || 'server'), false);
+        })
+        .importPreview(text, type);
+    }
+
+    function renderImpPreview(rows){
+      var root = document.getElementById('imp-preview');
+      if (!root) return;
+      var tbl = document.createElement('table');
+      tbl.style.width='100%'; tbl.style.borderCollapse='collapse';
+      var head = ['Type','Name','Phone','Notes'];
+      tbl.appendChild(tr(head, true));
+      rows.forEach(function(r){
+        var notes = (r.warnings && r.warnings.length) ? '⚠️ ' + r.warnings.join(', ') : '';
+        tbl.appendChild(tr([r.type||'', r.name||'', r.phone||'', notes], false));
+      });
+      root.appendChild(tbl);
+
+      function tr(cells, header){
+        var trEl = document.createElement('tr');
+        cells.forEach(function(c,i){
+          var cell = document.createElement(header?'th':'td');
+          cell.textContent = c;
+          cell.style.border='1px solid var(--card-border)';
+          cell.style.padding='6px 8px';
+          cell.style.textAlign = (i===2 ? 'right' : 'left');
+          trEl.appendChild(cell);
+        });
+        return trEl;
+      }
+    }
+
+    function impCommit(){
+      var text = document.getElementById('imp-text').value || '';
+      var type = document.getElementById('imp-type').value || 'Other';
+      var status = document.getElementById('imp-status');
+      setStatus(status, 'Importing…');
+
+      google.script.run
+        .withSuccessHandler(function(res){
+          if (!res || !res.ok) { setStatus(status, 'Import failed', false); return; }
+          setStatus(status, 'Done: added ' + res.added + ', skipped ' + res.skipped + ' of ' + res.total + '.', true);
+        })
+        .withFailureHandler(function(err){
+          setStatus(status, 'Import error: ' + (err && err.message || 'server'), false);
+        })
+        .importCommit(text, type);
+    }
   </script>
 </body>
 </html>
