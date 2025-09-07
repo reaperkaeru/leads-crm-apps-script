@@ -100,34 +100,6 @@
 
   <div id="debugBanner" class="status"></div>
 
-  <!-- SEARCH -->
-  <div class="card" id="searchCard">
-    <h3>🔎 Search Leads</h3>
-    <input id="srch-q" type="text" placeholder="Type to search…">
-    <div class="row" style="margin-top:8px;">
-      <select id="srch-field">
-        <option value="any">Any field</option>
-        <option value="name">Business Name</option>
-        <option value="address">Address</option>
-        <option value="phone">Phone</option>
-        <option value="email">Email</option>
-        <option value="status">Status</option>
-        <option value="type">Business Type</option>
-      </select>
-      <label style="display:flex;align-items:center;gap:6px;white-space:nowrap;">
-        <input id="srch-exact" type="checkbox"> exact
-      </label>
-    </div>
-      <div class="actions" style="margin-top:8px;">
-        <button id="srch-run" class="btn">Search</button>
-        <label style="display:flex;align-items:center;gap:6px;margin-left:8px;">
-          <input id="diag-mode" type="checkbox"> 🩺 Diagnose
-        </label>
-      </div>
-    <div id="srch-sum" class="status" style="margin:8px 0 0 0;"></div>
-    <div id="srch-results" style="display:grid;gap:8px;"></div>
-  </div>
-
   <!-- ADD LEAD -->
   <div class="card">
     <h3>➕ Add Lead</h3>
@@ -195,7 +167,7 @@
       <a href="#" onclick="openContact();return false;">✉️ Contact us</a>
     </div>
     <div class="credits">created by ChunkyMonkey</div>
-    <div class="build">v1.0.14</div>
+    <div class="build">v1.0.15</div>
     <div class="toggle" id="themeToggle" title="Toggle light/dark">🌙 Dark</div>
   </div>
 
@@ -284,102 +256,7 @@
 
     document.addEventListener('DOMContentLoaded', ()=>{
       ping();
-      const btn = document.getElementById('srch-run');
-      if (btn) btn.addEventListener('click', runLeadSearch);
-      const q = document.getElementById('srch-q');
-      if (q) q.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); runLeadSearch(); }});
     });
-  </script>
-
-<!-- Script 2: Search logic -->
-<script>
-    function runLeadSearch(){
-      var qEl = document.getElementById('srch-q');
-      var fEl = document.getElementById('srch-field');
-      var xEl = document.getElementById('srch-exact');
-
-      var opts = {
-        query:  qEl ? qEl.value : '',
-        field:  fEl ? fEl.value : 'any',
-        exact:  !!(xEl && xEl.checked),
-        limit:  200
-      };
-
-      const diag = document.getElementById('diag-mode')?.checked;
-
-      setSrchSummary('Searching…');
-      clearSrchResults();
-
-      // Watchdog: hint if nothing comes back in 10s
-      var watchdog = setTimeout(function(){
-        setSrchSummary('No response yet… Tap 🔄 Ping to authorize, then try search again.');
-      }, 10000);
-
-      if (diag === true) {
-        google.script.run
-          .withSuccessHandler(function(res){
-            clearTimeout(watchdog);
-            // Show the snapshot plainly so the user sees tab names & first row
-            setSrchSummary(JSON.stringify(res, null, 2));
-            clearSrchResults();
-          })
-          .withFailureHandler(function(err){
-            clearTimeout(watchdog);
-            setSrchSummary('Error: ' + (err && err.message || JSON.stringify(err)));
-          })
-          .debugSnapshot_();
-      } else {
-        google.script.run
-          .withSuccessHandler(function(res){
-            clearTimeout(watchdog);
-            if (!res || res.ok !== true) {
-              const msg = res && (res.error || res.message) || 'unknown';
-              setSrchSummary('Error: ' + msg + (res ? ' • raw: ' + JSON.stringify(res) : '')); return;
-            }
-            setSrchSummary('Found ' + res.count + ' row(s).' + (res.tag ? ' ['+res.tag+']' : ''));
-            renderSrchResults(res.rows || []);
-          })
-          .withFailureHandler(function(err){
-            clearTimeout(watchdog);
-            setSrchSummary('Error: ' + (err && err.message || JSON.stringify(err)));
-          })
-          .searchLeads_v4(opts);
-      }
-    }
-
-  function setSrchSummary(msg){
-    var el = document.getElementById('srch-sum');
-    if (el) el.textContent = msg;
-  }
-  function clearSrchResults(){
-    var root = document.getElementById('srch-results');
-    if (root) root.innerHTML = '';
-  }
-
-  function renderSrchResults(rows){
-    var root = document.getElementById('srch-results');
-    if (!root) return;
-    rows.forEach(function(r){
-      var el = document.createElement('div');
-      el.style.border = '1px solid var(--card-border)';
-      el.style.borderRadius = '8px';
-      el.style.padding = '8px';
-      el.style.background = 'var(--card-bg)';
-      el.innerHTML =
-        '<div><b>' + escapeHtml(r.name || '(no name)') + '</b></div>' +
-        '<div>' + escapeHtml(r.type || '') + ' • ' + escapeHtml(r.status || '') + '</div>' +
-        '<div>' + escapeHtml(r.address || '') + '</div>' +
-        '<div>' + escapeHtml(r.phone || '') + (r.email ? ' • ' + escapeHtml(r.email) : '') + '</div>' +
-        '<div style="opacity:.7;">Row ' + r.rowNumber + ' • Lead ID ' + escapeHtml(r.leadId || '') + '</div>' +
-        (r.notesLink ? '<div><a target="_blank" href="' + r.notesLink + '">Notes</a></div>' : '');
-      root.appendChild(el);
-    });
-  }
-
-  function escapeHtml(s){
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
-      .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-  }
   </script>
 </body>
 </html>
