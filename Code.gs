@@ -112,41 +112,36 @@ function searchLeads_v3(opts) {
 function searchLeads_v4(opts) {
   const tag = 'v4';
   try {
-    const sh = ensureSheets_(); // ensure sheet + headers exist
+    const sh = getLeadsSheetForRead_();
     const lastRow = sh.getLastRow();
-    const width = HEADERS.length;
+    if (lastRow < 2) return { ok: true, count: 0, rows: [], tag };
 
-    if (lastRow < 2) return { ok: true, count: 0, rows: [], tag, note: 'no data' };
-
-    // Read rows 2..lastRow, exactly HEADERS columns
+    const width = 11; // first 11 columns only
     const values = sh.getRange(2, 1, lastRow - 1, width).getValues();
 
-    // Map rows to objects without any filtering
-    const rows = values.map((row, i) => {
-      const rnum = i + 2; // actual sheet row number
-      return {
-        rowNumber: rnum,
-        type:       row[FIELD_INDEX.type-1],
-        name:       row[FIELD_INDEX.name-1],
-        address:    row[FIELD_INDEX.address-1],
-        phone:      row[FIELD_INDEX.phone-1],
-        email:      row[FIELD_INDEX.email-1],
-        status:     row[FIELD_INDEX.status-1],
-        dateAdded:  row[FIELD_INDEX.dateAdded-1],
-        lastUpdated:row[FIELD_INDEX.lastUpdated-1],
-        leadId:     row[FIELD_INDEX.leadId-1],
-        notesLink:  row[FIELD_INDEX.notesLink-1],
-        notesDocId: row[FIELD_INDEX.notesDocId-1]
-      };
-    });
+    const limit = Math.min(Number(opts && opts.limit) || 200, 200);
+    const rows = [];
+    for (let i = 0; i < values.length && rows.length < limit; i++) {
+      const row = values[i];
+      rows.push({
+        rowNumber: i + 2,
+        type:       row[0],
+        name:       row[1],
+        address:    row[2],
+        phone:      row[3],
+        email:      row[4],
+        status:     row[5],
+        dateAdded:  row[6],
+        lastUpdated:row[7],
+        leadId:     row[8],
+        notesLink:  row[9],
+        notesDocId: row[10]
+      });
+    }
 
-    // Limit to something reasonable for the UI
-    const limit = Math.min(Math.max(Number(opts && opts.limit || 200), 1), 1000);
-    const trimmed = rows.slice(0, limit);
-
-    return { ok: true, count: trimmed.length, rows: trimmed, tag };
+    return { ok: true, count: rows.length, rows, tag };
   } catch (e) {
-    return { ok: false, error: String(e && e.message || e), tag: 'v4' };
+    return { ok: false, error: String(e && e.message || e), tag };
   }
 }
 

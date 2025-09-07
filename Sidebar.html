@@ -362,41 +362,6 @@
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
       .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
   }
-
-    function setSrchSummary(msg){
-      const el = document.getElementById('srch-sum');
-      if (el) el.textContent = msg;
-    }
-    function clearSrchResults(){
-      const root = document.getElementById('srch-results');
-      if (root) root.innerHTML = '';
-    }
-
-    function renderSrchResults(rows){
-      const root = document.getElementById('srch-results');
-      if (!root) return;
-      rows.forEach(function(r){
-        const el = document.createElement('div');
-        el.style.border = '1px solid var(--card-border)';
-        el.style.borderRadius = '8px';
-        el.style.padding = '8px';
-        el.style.background = 'var(--card-bg)';
-        el.innerHTML = `
-          <div><b>${escapeHtml(r.name || '(no name)')}</b></div>
-          <div>${escapeHtml(r.type || '')} • ${escapeHtml(r.status || '')}</div>
-          <div>${escapeHtml(r.address || '')}</div>
-          <div>${escapeHtml(r.phone || '')}${r.email ? ' • ' + escapeHtml(r.email) : ''}</div>
-          <div style="opacity:.7;">Row ${r.rowNumber} • Lead ID ${escapeHtml(r.leadId || '')}</div>
-          ${r.notesLink ? `<div><a target="_blank" href="${r.notesLink}">Notes</a></div>` : ''}
-        `;
-        root.appendChild(el);
-      });
-    }
-
-    function escapeHtml(s){
-      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
-        .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-    }
   </script>
 </body>
 </html>
