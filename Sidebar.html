@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Modern font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --c1:#4292b3; --c2:#62acc9; --c3:#cbe9f3; --c4:#edfaff;
+      --bg: linear-gradient(180deg, var(--c4), #ffffff 40%);
+      --ink:#0b1722; --muted:#5b6b79; --line:#e6eef3;
+      --card-bg:#ffffff; --card-border:#e6eef3; --shadow:0 1px 4px rgba(0,0,0,.05);
+      --btn-grad: linear-gradient(135deg,var(--c1),var(--c2)); --btn-text:#000;
+      --input-bg:#fff; --input-border:#e6eef3; --focus-ring: 0 0 0 3px rgba(66,146,179,.20);
+      --hero-grad: linear-gradient(135deg, var(--c1), var(--c2)); --hero-text:#000;
+      --footer-border:#e6eef3; --rad:14px; --anim-fast:.15s;
+    }
+    :root[data-theme="dark"]{
+      --bg: linear-gradient(180deg, #10151a, #0b1116 40%);
+      --ink:#e5eef5; --muted:#9db1c1; --line:#1e2a33;
+      --card-bg:#0f171d; --card-border:#1e2a33; --shadow:0 1px 4px rgba(0,0,0,.6);
+      --btn-grad: linear-gradient(135deg, #3a89a9, #74bed4); --btn-text:#0b1116;
+      --input-bg:#0b1217; --input-border:#1e2a33; --focus-ring: 0 0 0 3px rgba(98,172,201,.35);
+      --hero-grad: linear-gradient(135deg, #2b6f8a, #65a9bf); --hero-text:#081116; --footer-border:#1e2a33;
+    }
+
+    *{ box-sizing:border-box; }
+    body{
+      margin:0; font: 13px/1.5 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color:var(--ink); background: var(--bg);
+      display:flex; flex-direction:column; min-height:100vh; animation: fadeIn .4s ease;
+    }
+    @keyframes fadeIn{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+
+    .hero{ background: var(--hero-grad); color:var(--hero-text); border-radius: 0 0 var(--rad) var(--rad); padding:10px 12px; box-shadow: 0 1px 6px rgba(0,0,0,.10); }
+    .brand{ display:flex; align-items:center; gap:10px; }
+    .logo{ width:32px; height:32px; border-radius:10px; background:var(--c3); display:grid; place-items:center; box-shadow: inset 0 0 0 2px rgba(0,0,0,.08); }
+    .logo img { width: 30px; height: 30px; display: block; }
+    .title{ font-size:15px; font-weight:800; line-height:1.1; }
+    .subtitle{ font-size:11px; color:#0b0b0b; opacity:.85; }
+    :root[data-theme="dark"] .subtitle{ color:#081116; opacity:.85; }
+
+    .actions{ display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+    .btn{ border:0; border-radius:12px; padding:8px 12px; cursor:pointer; font-weight:600; font-size:12px; display:flex; align-items:center; gap:6px; background: var(--btn-grad); color:#000; box-shadow: 0 2px 0 rgba(0,0,0,.08); transition: all .15s ease; }
+    .btn:hover{ filter: brightness(1.05); transform:translateY(-1px); }
+    .btn.light { background: var(--c3); color: #000; } .btn.light:hover { background: var(--c4); transform: translateY(-1px); }
+    .btn.secondary{ background: var(--c3); color:#000; }
+    :root[data-theme="dark"] .btn.secondary{ background:#163747; color:#bfe5f2; box-shadow:none; }
+
+    .card{ background:var(--card-bg); border:1px solid var(--card-border); border-radius: var(--rad); padding:14px; margin:14px; box-shadow:var(--shadow); }
+    .card h3{ margin:0 0 8px; font-size:14px; font-weight:700; }
+
+    label{ display:block; font-size:12px; color:var(--muted); margin-top:8px; }
+    input, select{
+      width:100%; margin-top:6px; padding:10px 12px; border:1px solid var(--input-border);
+      border-radius:999px; outline:none; background:var(--input-bg); color:var(--ink);
+      transition:border .2s, box-shadow .2s, background .2s;
+    }
+    input::placeholder, select::placeholder{ color:#9aa9b5; }
+    :root[data-theme="dark"] input::placeholder, :root[data-theme="dark"] select::placeholder{ color:#6b8799; }
+    input:focus, select:focus{ border-color: var(--c1); box-shadow: var(--focus-ring); }
+
+    .row{ display:flex; gap:8px; flex-wrap:wrap; } .row > *{ flex:1 1 180px; }
+    .status{ margin:14px; margin-top:8px; font-size:12px; min-height:18px; }
+    .ok { color: #0b8043; } .err { color: #c5221f; }
+
+    dialog { border:1px solid var(--card-border); border-radius:16px; padding:0; background:var(--card-bg); color:var(--ink); }
+    dialog .hd{ display:flex; justify-content:space-between; align-items:center; gap:8px; padding:10px; }
+    dialog .bd{ padding: 0 12px 12px; max-height: 70vh; overflow:auto; font-size:13px; line-height:1.45; }
+
+    .footer{ margin-top:auto; padding:8px 14px; border-top:1px dashed var(--footer-border); display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:space-between; }
+    .credits{ font-size:11px; font-style:italic; color:#e57373; }
+    .build{ font-size:11px; color:var(--muted); }
+    .footer a{ font-size:11px; color:var(--ink); text-decoration:underline; }
+    .toggle{ display:inline-flex; align-items:center; gap:6px; font-size:11px; padding:6px 8px; border-radius:999px; border:1px solid var(--card-border); background:var(--card-bg); cursor:pointer; user-select:none; }
+  </style>
+</head>
+<body>
+  <!-- HERO -->
+  <div class="hero">
+    <div class="brand">
+      <div class="logo">
+        <img src="https://i.imgur.com/sMSLApE.png" alt="LCC Logo">
+      </div>
+      <div>
+        <div class="title">Libni’s Cleaning Crew</div>
+        <div class="subtitle">Lightweight CRM • Clean & fast</div>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn light" onclick="downloadCsv()">⬇️ CSV</button>
+      <button class="btn light" onclick="openIdeas()">💡 Ideas</button>
+      <button class="btn light" onclick="ping()">🔄 Ping</button>
+    </div>
+  </div>
+
+  <div id="debugBanner" class="status"></div>
+
+  <!-- SEARCH -->
+  <div class="card" id="searchCard">
+    <h3>🔎 Search Leads</h3>
+    <input id="srch-q" type="text" placeholder="Type to search…">
+    <div class="row" style="margin-top:8px;">
+      <select id="srch-field">
+        <option value="any">Any field</option>
+        <option value="name">Business Name</option>
+        <option value="address">Address</option>
+        <option value="phone">Phone</option>
+        <option value="email">Email</option>
+        <option value="status">Status</option>
+        <option value="type">Business Type</option>
+      </select>
+      <label style="display:flex;align-items:center;gap:6px;white-space:nowrap;">
+        <input id="srch-exact" type="checkbox"> exact
+      </label>
+    </div>
+    <div class="actions" style="margin-top:8px;">
+      <button id="srch-run" class="btn">Search</button>
+    </div>
+    <div id="srch-sum" class="status" style="margin:8px 0 0 0;"></div>
+    <div id="srch-results" style="display:grid;gap:8px;"></div>
+  </div>
+
+  <!-- ADD LEAD -->
+  <div class="card">
+    <h3>➕ Add Lead</h3>
+    <label>Business Type
+      <select id="type">
+        <option value="">Select…</option>
+        <option>Office</option><option>Retail</option><option>Construction</option>
+        <option>Restaurant</option><option>Warehouse</option><option>Medical</option>
+        <option>Residential</option><option>Other</option>
+      </select>
+    </label>
+    <label>Business Name <input id="name" type="text" placeholder="Acme Client LLC"></label>
+    <label>Address <input id="address" type="text" placeholder="123 Main St, Phoenix, AZ"></label>
+    <div class="row">
+      <input id="phone" type="text" placeholder="(555) 123-4567">
+      <input id="email" type="text" placeholder="email or NA">
+    </div>
+    <label>Status
+      <select id="status">
+        <option>Call</option><option>Sale</option><option>Backup</option>
+      </select>
+    </label>
+    <div class="actions">
+      <button class="btn" onclick="saveLead()">💾 Save Lead</button>
+    </div>
+    <div id="saveStatus" class="status"></div>
+  </div>
+
+  <!-- Contact dialog -->
+  <dialog id="contactDlg" style="max-width: 520px; width: 92%;">
+    <form method="dialog" style="margin:0; padding:0;">
+      <div class="hd">
+        <h3 style="margin:0; font-size:16px;">Contact us</h3>
+        <button class="btn secondary" value="close">Close</button>
+      </div>
+      <div class="bd">
+        <p>If something breaks, email:</p>
+        <p><a href="mailto:domingmaru@gmail.com">domingmaru@gmail.com</a></p>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Ideas dialog -->
+  <dialog id="ideasDlg" style="max-width: 720px; width:95%;">
+    <form method="dialog" style="margin:0; padding:0;">
+      <div class="hd">
+        <h3 style="margin:0; font-size:16px;">Ideas &amp; Roadmap</h3>
+        <button class="btn secondary" value="close">Close</button>
+      </div>
+      <div class="bd">
+        <ul>
+          <li>Saved Views (e.g., “60+ days no update”, “Call today”).</li>
+          <li>Quick actions: Call/Email/Maps from the sheet.</li>
+          <li>CSV import with dedupe; weekly summary email.</li>
+          <li>Dashboard tab for conversion & aging buckets.</li>
+          <li>Libni if you see this buy me In N Out.</li>
+        </ul>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div class="links">
+      <a href="#" onclick="openContact();return false;">✉️ Contact us</a>
+    </div>
+    <div class="credits">created by ChunkyMonkey</div>
+    <div class="build">v1.0.14</div>
+    <div class="toggle" id="themeToggle" title="Toggle light/dark">🌙 Dark</div>
+  </div>
+
+  <!-- Script 1: theme + core actions -->
+  <script>
+    (function initTheme(){
+      const key = 'lcc-theme';
+      const root = document.documentElement;
+      const saved = localStorage.getItem(key);
+      if (saved === 'dark') root.setAttribute('data-theme','dark');
+      updateToggleLabel();
+      document.getElementById('themeToggle').addEventListener('click', ()=>{
+        const isDark = root.getAttribute('data-theme') === 'dark';
+        if (isDark) { root.removeAttribute('data-theme'); localStorage.setItem(key,'light'); }
+        else { root.setAttribute('data-theme','dark'); localStorage.setItem(key,'dark'); }
+        updateToggleLabel();
+      });
+      function updateToggleLabel(){
+        const isDark = root.getAttribute('data-theme') === 'dark';
+        const btn = document.getElementById('themeToggle');
+        btn.textContent = isDark ? '🌞 Light' : '🌙 Dark';
+      }
+    })();
+
+    function setStatus(el,msg,ok){ el.textContent = msg||''; el.className = 'status ' + (ok===true?'ok':ok===false?'err':''); }
+
+    function getVals(){ return {
+      type:document.getElementById('type').value.trim(),
+      name:document.getElementById('name').value.trim(),
+      address:document.getElementById('address').value.trim(),
+      phone:document.getElementById('phone').value.trim(),
+      email:document.getElementById('email').value.trim(),
+      status:document.getElementById('status').value.trim(),
+    };}
+
+    function saveLead(){
+      const p = getVals();
+      const el = document.getElementById('saveStatus');
+      setStatus(el,'Saving…');
+      google.script.run.withSuccessHandler(res=>{
+        if(res&&res.ok){ setStatus(el,res.message||'Saved!',true); clearForm(); }
+        else setStatus(el,(res&&res.message)||'Error',false);
+      }).withFailureHandler(err=>{
+        setStatus(el,'Error: '+(err&&err.message?err.message:''),false);
+      }).addEntryFromForm(p);
+    }
+
+    function clearForm(){
+      ['type','name','address','phone','email','status'].forEach(id=>{
+        document.getElementById(id).value = (id==='status'?'Call':'');
+      });
+    }
+
+    function downloadCsv(){
+      google.script.run.withSuccessHandler(res=>{
+        if(!res.csv){ alert('No data'); return; }
+        const a=document.createElement('a');
+        a.href=URL.createObjectURL(new Blob([res.csv],{type:'text/csv;charset=utf-8'}));
+        a.download=res.filename||'lcc_leads.csv';
+        a.click();
+      }).getLeadsCsv();
+    }
+
+    function openIdeas(){
+      const dlg = document.getElementById('ideasDlg');
+      if (dlg && dlg.showModal) dlg.showModal();
+      else alert('Ideas modal not supported on this browser.');
+    }
+
+    function openContact(){
+      const dlg = document.getElementById('contactDlg');
+      if (dlg && dlg.showModal) dlg.showModal();
+      else window.location.href='mailto:domingmaru@gmail.com';
+    }
+
+    function ping(){
+      const b=document.getElementById('debugBanner');
+      setStatus(b,'Pinging…');
+      google.script.run.withSuccessHandler(info=>{
+        if(info&&info.ok){ setStatus(b,'Connected ✅',true); }
+        else { setStatus(b,'Ping failed',false); }
+      }).withFailureHandler(err=>{
+        setStatus(b,'Ping error: '+(err&&err.message?err.message:''),false);
+      }).healthCheck();
+    }
+
+    document.addEventListener('DOMContentLoaded', ()=>{
+      ping();
+      const btn = document.getElementById('srch-run');
+      if (btn) btn.addEventListener('click', runLeadSearch);
+      const q = document.getElementById('srch-q');
+      if (q) q.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); runLeadSearch(); }});
+    });
+  </script>
+
+<!-- Script 2: Search logic -->
+<script>
+  function runLeadSearch(){
+    var qEl = document.getElementById('srch-q');
+    var fEl = document.getElementById('srch-field');
+    var xEl = document.getElementById('srch-exact');
+
+    var opts = {
+      query:  qEl ? qEl.value : '',
+      field:  fEl ? fEl.value : 'any',
+      exact:  !!(xEl && xEl.checked),
+      limit:  200
+    };
+
+    setSrchSummary('Searching…');
+    clearSrchResults();
+
+    // Watchdog: hint if nothing comes back in 10s
+    var watchdog = setTimeout(function(){
+      setSrchSummary('No response yet… Tap 🔄 Ping to authorize, then try search again.');
+    }, 10000);
+
+    google.script.run
+      .withSuccessHandler(function(res){
+        clearTimeout(watchdog);
+        if (!res || res.ok !== true) {
+          var msg = res && (res.error || res.message) || 'unknown';
+          setSrchSummary('Error: ' + msg + (res ? ' • raw: ' + JSON.stringify(res) : ''));
+          return;
+        }
+        setSrchSummary('Found ' + res.count + ' row(s).' + (res.tag ? ' ['+res.tag+']' : ''));
+        renderSrchResults(res.rows || []);
+      })
+      .withFailureHandler(function(err){
+        clearTimeout(watchdog);
+        var msg = (err && err.message) ? err.message : JSON.stringify(err) || 'server error';
+        setSrchSummary('Error: ' + msg);
+      })
+      .searchLeads_v4(opts);
+  }
+
+  function setSrchSummary(msg){
+    var el = document.getElementById('srch-sum');
+    if (el) el.textContent = msg;
+  }
+  function clearSrchResults(){
+    var root = document.getElementById('srch-results');
+    if (root) root.innerHTML = '';
+  }
+
+  function renderSrchResults(rows){
+    var root = document.getElementById('srch-results');
+    if (!root) return;
+    rows.forEach(function(r){
+      var el = document.createElement('div');
+      el.style.border = '1px solid var(--card-border)';
+      el.style.borderRadius = '8px';
+      el.style.padding = '8px';
+      el.style.background = 'var(--card-bg)';
+      el.innerHTML =
+        '<div><b>' + escapeHtml(r.name || '(no name)') + '</b></div>' +
+        '<div>' + escapeHtml(r.type || '') + ' • ' + escapeHtml(r.status || '') + '</div>' +
+        '<div>' + escapeHtml(r.address || '') + '</div>' +
+        '<div>' + escapeHtml(r.phone || '') + (r.email ? ' • ' + escapeHtml(r.email) : '') + '</div>' +
+        '<div style="opacity:.7;">Row ' + r.rowNumber + ' • Lead ID ' + escapeHtml(r.leadId || '') + '</div>' +
+        (r.notesLink ? '<div><a target="_blank" href="' + r.notesLink + '">Notes</a></div>' : '');
+      root.appendChild(el);
+    });
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+    function setSrchSummary(msg){
+      const el = document.getElementById('srch-sum');
+      if (el) el.textContent = msg;
+    }
+    function clearSrchResults(){
+      const root = document.getElementById('srch-results');
+      if (root) root.innerHTML = '';
+    }
+
+    function renderSrchResults(rows){
+      const root = document.getElementById('srch-results');
+      if (!root) return;
+      rows.forEach(function(r){
+        const el = document.createElement('div');
+        el.style.border = '1px solid var(--card-border)';
+        el.style.borderRadius = '8px';
+        el.style.padding = '8px';
+        el.style.background = 'var(--card-bg)';
+        el.innerHTML = `
+          <div><b>${escapeHtml(r.name || '(no name)')}</b></div>
+          <div>${escapeHtml(r.type || '')} • ${escapeHtml(r.status || '')}</div>
+          <div>${escapeHtml(r.address || '')}</div>
+          <div>${escapeHtml(r.phone || '')}${r.email ? ' • ' + escapeHtml(r.email) : ''}</div>
+          <div style="opacity:.7;">Row ${r.rowNumber} • Lead ID ${escapeHtml(r.leadId || '')}</div>
+          ${r.notesLink ? `<div><a target="_blank" href="${r.notesLink}">Notes</a></div>` : ''}
+        `;
+        root.appendChild(el);
+      });
+    }
+
+    function escapeHtml(s){
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+  </script>
+</body>
+</html>
