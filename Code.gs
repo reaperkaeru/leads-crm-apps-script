@@ -24,6 +24,78 @@ const HEADERS = [
 const STATUS_VALUES = ["Call","Sale","Backup"];
 const TYPE_VALUES = ["Office","Retail","Construction","Restaurant","Warehouse","Medical","Residential","Other"];
 
+/***** IMPORT: parse → preview → commit *****/
+function parseImport_(text, defaultType) {
+  const TYPE_SET = new Set((TYPE_VALUES || []).map(v => String(v).toLowerCase()));
+  const out = [];
+  const lines = String(text || '').split(/\r?\n/);
+
+  for (let i = 0; i < lines.length; i++) {
+    let raw = (lines[i] || '').trim();
+    if (!raw) continue;
+
+    // 1) grab phone
+    const m = raw.match(/(\+?1[\s\-\.]?)?\(?\d{3}\)?[\s\-\.]?\d{3}[\s\-\.]?\d{4}/);
+    let phone = '';
+    if (m) {
+      phone = formatPhoneUS_(m[0]);
+      raw = (raw.slice(0, m.index) + raw.slice(m.index + m[0].length)).trim();
+    }
+
+    // 2) detect a business type token if present; else use defaultType/Other
+    let type = defaultType || 'Other';
+    const lower = raw.toLowerCase();
+    for (const t of (TYPE_VALUES || [])) {
+      if (lower.includes(String(t).toLowerCase())) {
+        type = t;
+        raw = raw.replace(new RegExp(t, 'i'), '').trim().replace(/^[\|\-•,]+/, '').trim();
+        break;
+      }
+    }
+
+    // 3) remainder is the name
+    let name = raw.replace(/^[\|\-•,]+/, '').replace(/[\|\-•,]+$/, '').trim();
+
+    const warnings = [];
+    if (!name) warnings.push('no name');
+    if (!phone) warnings.push('no phone');
+
+    out.push({
+      type: type || 'Other',
+      name: name || '',
+      address: 'NA',
+      phone: phone || '',
+      email: 'NA',
+      status: 'Call',
+      warnings
+    });
+  }
+  return out;
+}
+
+function importPreview(text, defaultType) {
+  const rows = parseImport_(text, defaultType);
+  return { ok: true, rows };
+}
+
+function importCommit(text, defaultType) {
+  const rows = parseImport_(text, defaultType);
+  let added = 0, skipped = 0;
+  const results = [];
+
+  for (const r of rows) {
+    if (!r.name || !r.phone) {
+      results.push({ ok: false, message: 'Missing name or phone', row: r });
+      skipped++;
+      continue;
+    }
+    const res = addEntryFromForm(r);
+    results.push({ ok: !!res.ok, message: res.message, row: r });
+    if (res.ok) added++; else skipped++;
+  }
+  return { ok: true, total: rows.length, added, skipped, results };
+}
+
 /***** CORE UTIL *****/
 function getSs_(){ return SpreadsheetApp.openById(SHEET_ID); }
 function now_(){ return new Date(); }
@@ -142,12 +214,25 @@ function addEntryFromForm(obj){
   if (email && email.toUpperCase() !== 'NA' && !validateEmail_(email)) return {ok:false, message:'Invalid email.'};
   if (!STATUS_VALUES.includes(status)) return {ok:false, message:'Invalid status.'};
 
-  // Deduplicate by Business Name + Address
+  // Deduplicate by Name+Address normally; if address is 'NA', use Name+Phone
   const vals = sh.getDataRange().getValues();
-  for (let i=1;i<vals.length;i++){
-    if ((String(vals[i][1]||'').trim().toLowerCase()===name.toLowerCase()) &&
-        (String(vals[i][2]||'').trim().toLowerCase()===addr.toLowerCase())){
-      return {ok:false, message:'Duplicate (same name & address).' };
+  const nameLC = name.toLowerCase();
+  const addrLC = addr.toLowerCase();
+  const phoneDigits = String(phone).replace(/\D/g, '');
+
+  for (let i = 1; i < vals.length; i++) {
+    const nm = String(vals[i][1] || '').trim().toLowerCase(); // Business Name
+    const ad = String(vals[i][2] || '').trim().toLowerCase(); // Address
+    const ph = String(vals[i][3] || '').replace(/\D/g, '');   // Phone Number (digits only)
+
+    if (addrLC !== 'na' && ad !== 'na') {
+      if (nm === nameLC && ad === addrLC) {
+        return { ok: false, message: 'Duplicate (same name & address).' };
+      }
+    } else {
+      if (nm === nameLC && ph === phoneDigits) {
+        return { ok: false, message: 'Duplicate (same name & phone).' };
+      }
     }
   }
 
