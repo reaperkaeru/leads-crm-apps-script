@@ -11,7 +11,7 @@ function formatPhoneUS_(raw) {
 
 /***** CONFIG *****/
 const SHEET_ID = '1fk6VErZH8IiOVAnuh84Iwqvgj4GzuDLmkVLXvqd6nEY';
-const TARGET_SHEET = 'Leads';
+const TARGET_SHEET = 'Leads'; // user may change this to the actual tab later
 
 const NOTES_FOLDER_ID   = '1rtBKEwx9CKQmJP27B1Na846llGwfx_9w';
 const ARCHIVE_FOLDER_ID = '1oSh922rTASXlufDssr1i5rsP-t4lF0Pg';
@@ -112,36 +112,34 @@ function searchLeads_v3(opts) {
 function searchLeads_v4(opts) {
   const tag = 'v4';
   try {
-    const sh = getLeadsSheetForRead_();
+    const ss = getSs_();
+    const sh = ss.getSheetByName(TARGET_SHEET);
+    if (!sh) return { ok:false, error:'Target sheet not found: ' + TARGET_SHEET, tag };
+
     const lastRow = sh.getLastRow();
-    if (lastRow < 2) return { ok: true, count: 0, rows: [], tag };
+    const width   = HEADERS.length;
+    if (lastRow < 2) return { ok:true, count:0, rows:[], tag, note:'no data' };
 
-    const width = 11; // first 11 columns only
-    const values = sh.getRange(2, 1, lastRow - 1, width).getValues();
+    const values = sh.getRange(2, 1, lastRow - 1, width).getValues(); // rows 2..N
+    const rows = values.map((row, i) => ({
+      rowNumber: i + 2,
+      type:       row[0],
+      name:       row[1],
+      address:    row[2],
+      phone:      row[3],
+      email:      row[4],
+      status:     row[5],
+      dateAdded:  row[6],
+      lastUpdated:row[7],
+      leadId:     row[8],
+      notesLink:  row[9],
+      notesDocId: row[10]
+    }));
 
-    const limit = Math.min(Number(opts && opts.limit) || 200, 200);
-    const rows = [];
-    for (let i = 0; i < values.length && rows.length < limit; i++) {
-      const row = values[i];
-      rows.push({
-        rowNumber: i + 2,
-        type:       row[0],
-        name:       row[1],
-        address:    row[2],
-        phone:      row[3],
-        email:      row[4],
-        status:     row[5],
-        dateAdded:  row[6],
-        lastUpdated:row[7],
-        leadId:     row[8],
-        notesLink:  row[9],
-        notesDocId: row[10]
-      });
-    }
-
-    return { ok: true, count: rows.length, rows, tag };
+    const limit = Math.min(Math.max(Number(opts && opts.limit || 200), 1), 1000);
+    return { ok:true, count:Math.min(rows.length, limit), rows: rows.slice(0, limit), tag };
   } catch (e) {
-    return { ok: false, error: String(e && e.message || e), tag };
+    return { ok:false, error:String(e && e.message || e), tag:'v4' };
   }
 }
 
@@ -564,6 +562,19 @@ function onOpen(){
 }
 
 /***** DEBUG *****/
+function debugSnapshot_(){
+  try{
+    const ss = getSs_();
+    const sheets = ss.getSheets().map(s => ({name:s.getName(), lastRow:s.getLastRow(), lastCol:s.getLastColumn()}));
+    const sh = ss.getSheetByName(TARGET_SHEET);
+    const width = sh ? Math.max(HEADERS.length, sh.getLastColumn()) : 0;
+    const headerRow = sh ? sh.getRange(1,1,1,width).getValues()[0] : null;
+    const firstData = (sh && sh.getLastRow()>=2) ? sh.getRange(2,1,1,Math.min(width,HEADERS.length)).getValues()[0] : null;
+    return { ok:true, target:TARGET_SHEET, targetExists:!!sh, sheets, headerRow, firstData };
+  } catch(e){
+    return { ok:false, error:String(e && e.message || e) };
+  }
+}
 function healthCheck(){
   try{
     const ss=getSs_();
